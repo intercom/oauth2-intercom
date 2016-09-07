@@ -65,7 +65,7 @@ class Intercom extends AbstractProvider
         }
 
         throw new IdentityProviderException(
-            @$data['errors'][0]['message'] ?: $response->getReasonPhrase(),
+            $data['errors'][0]['message'] ?: $response->getReasonPhrase(),
             $statusCode,
             $response
         );
