@@ -20,7 +20,11 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function __construct(array $response = array())
     {
-        $this->response = $response;
+        if ($response['email_verified'] == true) {
+            $this->response = $response;
+        } else {
+            $this->response = array();
+        }
     }
 
     /**
@@ -30,7 +34,7 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function getId()
     {
-        return $this->response['id'] ?: null;
+        return array_key_exists('id', $this->response) ? $this->response['id'] : null;
     }
 
     /**
@@ -40,7 +44,7 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function getName()
     {
-        return $this->response['name'] ?: null;
+        return array_key_exists('name', $this->response) ? $this->response['name'] : null;
     }
 
     /**
@@ -50,7 +54,7 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function getEmail()
     {
-        return $this->response['email'] ?: null;
+        return array_key_exists('email', $this->response) ? $this->response['email'] : null;
     }
 
     /**
@@ -60,7 +64,7 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function getAvatarUrl()
     {
-        return $this->response['avatar']['image_url'] ?: null;
+        return array_key_exists('avatar', $this->response) ? $this->response['avatar']['image_url'] : null;
     }
 
     /**
