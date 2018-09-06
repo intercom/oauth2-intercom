@@ -65,6 +65,16 @@ if (!isset($_GET['code'])) {
 }
 ```
 
+By default Intercom provider rejects users with unverified email addresses. User info will not be populated in that case. To disable this check add verifyEmail set to false to your config:
+
+```php
+$provider = new Intercom\OAuth2\Client\Provider\Intercom([
+    'clientId'          => '{intercom-client-id}',
+    'clientSecret'      => '{intercom-client-secret}',
+    'redirectUri'       => 'https://example.com/callback-url',
+    'verifyEmail'       => false
+]);
+```
 
 ## Refreshing a Token
 
