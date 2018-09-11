@@ -20,11 +20,7 @@ class IntercomResourceOwner implements ResourceOwnerInterface
      */
     public function __construct(array $response = array())
     {
-        if ($response['email_verified'] == true) {
-            $this->response = $response;
-        } else {
-            $this->response = array();
-        }
+        $this->response = $response;
     }
 
     /**

@@ -139,6 +139,45 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(null, $user->getAvatarUrl());
     }
 
+    public function testSkipUserUnverifiedEmailCheck()
+    {
+        $provider = new \Intercom\OAuth2\Client\Provider\Intercom([
+            'clientId' => 'mock_client_id',
+            'clientSecret' => 'mock_secret',
+            'redirectUri' => 'none',
+            'verifyEmail' => false
+        ]);
+
+        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+
+        $postResponse->shouldReceive('getBody')->andReturn('{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}');
+        $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        $postResponse->shouldReceive('getStatusCode')->andReturn(200);
+
+        $userJson = '{"type":"admin","id":"368312","email":"fizbit@intercom.io","name":"Fizbit Grappleboot","email_verified":false,"app":{"type":"app","id_code":"2qmk5gy1","created_at":1358214715,"secure":true},"avatar":{"type":"avatar", "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"}}';
+        $userArray = json_decode($userJson, true);
+
+        $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
+        $userResponse->shouldReceive('getBody')->andReturn($userJson);
+        $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        $userResponse->shouldReceive('getStatusCode')->andReturn(200);
+
+        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client->shouldReceive('send')
+            ->times(2)
+            ->andReturn($postResponse, $userResponse);
+        $provider->setHttpClient($client);
+
+        $token = $provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        $user = $provider->getResourceOwner($token);
+
+        $this->assertEquals($userArray, $user->toArray());
+        $this->assertEquals($userArray['id'], $user->getId());
+        $this->assertEquals($userArray['email'], $user->getEmail());
+        $this->assertEquals($userArray['name'], $user->getName());
+        $this->assertEquals($userArray['avatar']['image_url'], $user->getAvatarUrl());
+    }
+
     /**
      * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
      **/

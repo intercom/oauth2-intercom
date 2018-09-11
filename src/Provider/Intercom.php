@@ -9,6 +9,12 @@ use Psr\Http\Message\ResponseInterface;
 
 class Intercom extends AbstractProvider
 {
+
+    /**
+     * @var boolean By default Intercom strategy rejects users with unverified email addresses.
+     */
+    protected $verifyEmail = true;
+
     /**
      * Get authorization url to begin OAuth flow
      *
@@ -80,7 +86,7 @@ class Intercom extends AbstractProvider
      */
     protected function getDefaultHeaders()
     {
-        return [ 'Accept' => 'application/json', 'User-Agent' => 'league/oauth2-intercom/1.0.1' ];
+        return [ 'Accept' => 'application/json', 'User-Agent' => 'league/oauth2-intercom/1.0.2' ];
     }
 
 
@@ -119,6 +125,10 @@ class Intercom extends AbstractProvider
      */
     protected function createResourceOwner(array $response, AccessToken $token)
     {
-        return new IntercomResourceOwner($response);
+        $validatedResponse = $response;
+        if ($this->verifyEmail == true && $response['email_verified'] != true) {
+            $validatedResponse = [];
+        }
+        return new IntercomResourceOwner($validatedResponse);
     }
 }
