@@ -185,7 +185,9 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     {
         $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
 
-        $postResponse->shouldReceive('getBody')->andReturn('{"type":"error.list","request_id":"anvt4on87prigma30i8g","errors":[{"code":"server_error","message":"Server Error"}]}');
+        $errorBody = '{"type":"error.list","request_id":"anvt4on87prigma30i8g","errors":[{"code":"server_error","message":"Server Error"}]}';
+
+        $postResponse->shouldReceive('getBody')->andReturn($errorBody);
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getStatusCode')->andReturn(401);
 
@@ -194,7 +196,7 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
             ->times(1)
             ->andReturn($postResponse);
         $this->provider->setHttpClient($client);
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
     }
 
     /**
@@ -204,7 +206,9 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     {
         $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
 
-        $postResponse->shouldReceive('getBody')->andReturn('');
+        $errorBody = '{"type":"error.list","request_id":"anvt4on87prigma30i8g","errors":[{"code":"server_error","message":"Server Error"}]}';
+
+        $postResponse->shouldReceive('getBody')->andReturn($errorBody);
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getReasonPhrase')->andReturn('Internal Server Error');
         $postResponse->shouldReceive('getStatusCode')->andReturn(500);
@@ -214,6 +218,6 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
             ->times(1)
             ->andReturn($postResponse);
         $this->provider->setHttpClient($client);
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
     }
 }

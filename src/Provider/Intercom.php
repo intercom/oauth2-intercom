@@ -113,7 +113,7 @@ class Intercom extends AbstractProvider
 
         $request = $this->getAuthenticatedRequest(self::METHOD_GET, $url, $token);
 
-        return $this->getResponse($request);
+        return $this->getParsedResponse($request);
     }
 
     /**
