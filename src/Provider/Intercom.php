@@ -86,7 +86,7 @@ class Intercom extends AbstractProvider
      */
     protected function getDefaultHeaders()
     {
-        return [ 'Accept' => 'application/json', 'User-Agent' => 'league/oauth2-intercom/1.0.2' ];
+        return [ 'Accept' => 'application/json', 'User-Agent' => 'league/oauth2-intercom/2.0.0' ];
     }
 
 
