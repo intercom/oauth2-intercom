@@ -22,7 +22,7 @@ class Intercom extends AbstractProvider
      */
     public function getBaseAuthorizationUrl()
     {
-        return 'https://app.intercom.io/oauth';
+        return 'https://app.intercom.com/oauth';
     }
 
     /**
