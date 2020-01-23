@@ -41,7 +41,7 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     public function testGetAuthorizationUrl()
     {
         $url = $this->provider->getAuthorizationUrl();
-        $this->assertContains('https://app.intercom.io/oauth', $url);
+        $this->assertContains('https://app.intercom.com/oauth', $url);
     }
 
     public function testGetBaseAccessTokenUrl()
