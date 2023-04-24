@@ -2,28 +2,33 @@
 
 namespace Intercom\OAuth2\Client\Test\Provider;
 
+use Intercom\OAuth2\Client\Provider\Intercom;
+use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use Mockery as m;
+use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
+use GuzzleHttp\ClientInterface;
 
-class IntercomTest extends \PHPUnit_Framework_TestCase
+class IntercomTest extends TestCase
 {
-    protected $provider;
+    protected Intercom $provider;
 
-    protected function setUp()
+    protected function setUp(): void
     {
-        $this->provider = new \Intercom\OAuth2\Client\Provider\Intercom([
+        $this->provider = new Intercom([
             'clientId' => 'mock_client_id',
             'clientSecret' => 'mock_secret',
             'redirectUri' => 'none',
         ]);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
         parent::tearDown();
     }
 
-    public function testAuthorizationUrl()
+    public function testAuthorizationUrl(): void
     {
         $url = $this->provider->getAuthorizationUrl(['approval_prompt' => []]);
         $uri = parse_url($url);
@@ -38,32 +43,37 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $this->assertNotNull($this->provider->getState());
     }
 
-    public function testGetAuthorizationUrl()
+    public function testGetAuthorizationUrl(): void
     {
         $url = $this->provider->getAuthorizationUrl();
-        $this->assertContains('https://app.intercom.com/oauth', $url);
+        $this->assertStringContainsString('https://app.intercom.com/oauth', $url);
     }
 
-    public function testGetBaseAccessTokenUrl()
+    public function testGetBaseAccessTokenUrl(): void
     {
         $url = $this->provider->getBaseAccessTokenUrl([]);
-        $this->assertContains('https://api.intercom.io/auth/eagle/token', $url);
+        $this->assertStringContainsString('https://api.intercom.io/auth/eagle/token', $url);
     }
 
-    public function getResourceOwnerDetailsUrl()
+    public function getResourceOwnerDetailsUrl(): void
     {
-        $url = $this->provider->getBaseAccessTokenUrl('mock_token');
-        $this->assertContains('https://api.intercom.io/me', $url);
+        $url = $this->provider->getBaseAccessTokenUrl((array)'mock_token');
+        $this->assertStringContainsString('https://api.intercom.io/me', $url);
     }
 
-    public function testGetAccessToken()
+    /**
+     * @throws IdentityProviderException
+     */
+    public function testGetAccessToken(): void
     {
-        $response = m::mock('Psr\Http\Message\ResponseInterface');
-        $response->shouldReceive('getBody')->andReturn('{"access_token": "mock_access_token", "token_type": "bearer", "uid": "12345"}');
+        $response = m::mock(ResponseInterface::class);
+        $response->shouldReceive('getBody')->andReturn(
+            '{"access_token": "mock_access_token", "token_type": "bearer", "uid": "12345"}'
+        );
         $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $response->shouldReceive('getStatusCode')->andReturn(200);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')->times(1)->andReturn($response);
         $this->provider->setHttpClient($client);
 
@@ -79,11 +89,29 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     {
         $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
 
-        $postResponse->shouldReceive('getBody')->andReturn('{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}');
+        $postResponse->shouldReceive('getBody')->andReturn(
+            '{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}'
+        );
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $userJson = '{"type":"admin","id":"368312","email":"fizbit@intercom.io","name":"Fizbit Grappleboot","email_verified":true,"app":{"type":"app","id_code":"2qmk5gy1","created_at":1358214715,"secure":true},"avatar":{"type":"avatar", "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"}}';
+        $userJson = '{
+            "type":"admin",
+            "id":"368312",
+            "email":"fizbit@intercom.io",
+            "name":"Fizbit Grappleboot",
+            "email_verified":true,
+            "app":{
+                "type":"app",
+                "id_code":"2qmk5gy1",
+                "created_at":1358214715,
+                "secure":true
+            },
+            "avatar":{
+                "type":"avatar",
+                "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"
+            }
+        }';
         $userArray = json_decode($userJson, true);
 
         $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
@@ -91,7 +119,7 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
             ->times(2)
             ->andReturn($postResponse, $userResponse);
@@ -107,15 +135,33 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($userArray['avatar']['image_url'], $user->getAvatarUrl());
     }
 
-    public function testUserUnverifiedEmail()
+    public function testUserUnverifiedEmail(): void
     {
         $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
 
-        $postResponse->shouldReceive('getBody')->andReturn('{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}');
+        $postResponse->shouldReceive('getBody')->andReturn(
+            '{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}'
+        );
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $userJson = '{"type":"admin","id":"368312","email":"fizbit@intercom.io","name":"Fizbit Grappleboot","email_verified":false,"app":{"type":"app","id_code":"2qmk5gy1","created_at":1358214715,"secure":true},"avatar":{"type":"avatar", "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"}}';
+        $userJson = '{
+            "type":"admin",
+            "id":"368312",
+            "email":"fizbit@intercom.io",
+            "name":"Fizbit Grappleboot",
+            "email_verified":false,
+            "app":{
+                "type":"app",
+                "id_code":"2qmk5gy1",
+                "created_at":1358214715,
+                "secure":true
+            },
+            "avatar":{
+                "type":"avatar",
+                "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"
+            }
+        }';
         $userArray = json_decode($userJson, true);
 
         $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
@@ -123,7 +169,7 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
             ->times(2)
             ->andReturn($postResponse, $userResponse);
@@ -132,29 +178,44 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
         $user = $this->provider->getResourceOwner($token);
 
-        $this->assertEquals(array(), $user->toArray());
+        $this->assertEquals([], $user->toArray());
         $this->assertEquals(null, $user->getId());
         $this->assertEquals(null, $user->getEmail());
         $this->assertEquals(null, $user->getName());
         $this->assertEquals(null, $user->getAvatarUrl());
     }
 
-    public function testSkipUserUnverifiedEmailCheck()
+    public function testSkipUserUnverifiedEmailCheck(): void
     {
-        $provider = new \Intercom\OAuth2\Client\Provider\Intercom([
+        $provider = new Intercom([
             'clientId' => 'mock_client_id',
             'clientSecret' => 'mock_secret',
             'redirectUri' => 'none',
-            'verifyEmail' => false
+            'verifyEmail' => false,
         ]);
 
         $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
 
-        $postResponse->shouldReceive('getBody')->andReturn('{"token": "mock_access_token", "access_token": "mock_access_token", "token_type": "Bearer"}');
+        $postResponse->shouldReceive('getBody')->andReturn('{
+            "token": "mock_access_token",
+            "access_token": "mock_access_token",
+            "token_type": "Bearer"
+        }');
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $userJson = '{"type":"admin","id":"368312","email":"fizbit@intercom.io","name":"Fizbit Grappleboot","email_verified":false,"app":{"type":"app","id_code":"2qmk5gy1","created_at":1358214715,"secure":true},"avatar":{"type":"avatar", "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"}}';
+        $userJson = '{
+            "type":"admin",
+            "id":"368312",
+            "email":"fizbit@intercom.io",
+            "name":"Fizbit Grappleboot",
+            "email_verified":false,
+            "app":{"type":"app","id_code":"2qmk5gy1","created_at":1358214715,"secure":true},
+            "avatar":{
+                "type":"avatar",
+                "image_url":"https://static.intercomassets.com/avatars/228311/square_128/1462489937.jpg"
+            }
+        }';
         $userArray = json_decode($userJson, true);
 
         $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
@@ -162,7 +223,7 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
         $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
             ->times(2)
             ->andReturn($postResponse, $userResponse);
@@ -179,19 +240,24 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-     **/
-    public function testExceptionThrownWhenErrorResponse()
+     * @throws IdentityProviderException
+     */
+    public function testExceptionThrownWhenErrorResponse(): void
     {
-        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+        $this->expectException(IdentityProviderException::class);
+        $postResponse = m::mock(ResponseInterface::class);
 
-        $errorBody = '{"type":"error.list","request_id":"anvt4on87prigma30i8g","errors":[{"code":"server_error","message":"Server Error"}]}';
+        $errorBody = '{
+            "type":"error.list",
+            "request_id":"anvt4on87prigma30i8g",
+            "errors":[{"code":"server_error","message":"Server Error"}]
+        }';
 
         $postResponse->shouldReceive('getBody')->andReturn($errorBody);
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getStatusCode')->andReturn(401);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
             ->times(1)
             ->andReturn($postResponse);
@@ -200,20 +266,25 @@ class IntercomTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-     **/
-    public function testExceptionThrownWhenStatusNotSuccess()
+     * @throws IdentityProviderException
+     */
+    public function testExceptionThrownWhenStatusNotSuccess(): void
     {
-        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+        $this->expectException(IdentityProviderException::class);
+        $postResponse = m::mock(ResponseInterface::class);
 
-        $errorBody = '{"type":"error.list","request_id":"anvt4on87prigma30i8g","errors":[{"code":"server_error","message":"Server Error"}]}';
+        $errorBody = '{
+            "type":"error.list",
+            "request_id":"anvt4on87prigma30i8g",
+            "errors":[{"code":"server_error","message":"Server Error"}]
+        }';
 
         $postResponse->shouldReceive('getBody')->andReturn($errorBody);
         $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
         $postResponse->shouldReceive('getReasonPhrase')->andReturn('Internal Server Error');
         $postResponse->shouldReceive('getStatusCode')->andReturn(500);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
+        $client = m::mock(ClientInterface::class);
         $client->shouldReceive('send')
             ->times(1)
             ->andReturn($postResponse);
